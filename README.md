@@ -1,2 +1,3 @@
 # bilibili-dark-mode-script
-Bilibili夜间模式脚本备份
+
+Bilibili 夜间模式脚本备份，用于油猴脚本
