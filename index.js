@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站暗黑模式 Bilibili dark mode
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  B站暗黑模式
 // @author       zhyib
 // @match        https://*.bilibili.com/*
@@ -47,13 +47,15 @@
     '--Ga13_s': '#202020',
   };
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    // force change global css variables
     const html = document.getElementsByTagName('html')[0];
     Object.entries(styleSheet).forEach(([k, v]) => {
       html.style.setProperty(k, v);
     })
 
+    // avitivity pages
     const bg = document.getElementsByClassName('bg')[0];
-    bg.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${bg.style.getPropertyValue('background-image')}`)
+    bg.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(bg).getPropertyValue('background-image')}`)
 
   }
 })();
