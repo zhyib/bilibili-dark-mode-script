@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站暗黑模式 Bilibili dark mode
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  B站暗黑模式
 // @author       zhyib
 // @match        https://*.bilibili.com/*
@@ -45,6 +45,26 @@
     '--Ga12_s': '#151515',
     '--Ga13': '#202020',
     '--Ga13_s': '#202020',
+    //
+    '--Wh0': '#000',
+    '--Wh0_t': '#000',
+    '--Ba0': '#fff',
+    '--Ba0_s': '#fff',
+    '--Ba0_t': '#fff',
+    //
+    '--Wh0_rgb': '0, 0, 0',
+    '--Ga0_rgb': '21, 21, 21',
+    '--Ga0_s_rgb': '21, 21, 21',
+    '--Ga1_rgb': '16, 16, 16',
+    '--Ga1_s_rgb': '16, 16, 16',
+    '--Ga2_rgb': '48, 48, 48',
+    '--Ga3_rgb': '80, 80, 80',
+    '--Ga5_rgb': '144, 144, 144',
+    '--Ga7_rgb': '176, 176, 176',
+    '--Ga10_rgb': '0, 0, 0',
+    '--Ga11_rgb': '0, 0, 0',
+    '--Ga12_rgb': '10, 10, 10',
+    '--Ba0_rgb': '0, 0, 0',
   };
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
     // force change global css variables
@@ -53,9 +73,14 @@
       html.style.setProperty(k, v);
     })
 
-    // avitivity pages
+    // activity pages
     const bg = document.getElementsByClassName('bg')[0];
-    bg.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(bg).getPropertyValue('background-image')}`)
+    bg?.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(bg).getPropertyValue('background-image')}`)
 
+    // message pages
+    setTimeout(() => {
+      const messageBg = document.getElementsByClassName('message-bg')[0];
+      messageBg?.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(messageBg).getPropertyValue('background-image')}`)
+    }, 1000)
   }
 })();
