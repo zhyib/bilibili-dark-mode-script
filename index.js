@@ -7,7 +7,7 @@
 // @match        https://*.bilibili.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant        none
-// @license      MIT
+// @license      CC-BY-NC-SA-4.0
 // ==/UserScript==
 
 (function () {
