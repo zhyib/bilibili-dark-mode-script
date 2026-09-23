@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         B站暗黑模式 Bilibili dark mode
+// @name         B站自动深色模式 Bilibili auto dark mode
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
-// @description  B站暗黑模式
+// @version      1.1.0
+// @description  B站自动深色模式
 // @author       zhyib
 // @match        https://*.bilibili.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
@@ -12,75 +12,51 @@
 
 (function () {
   'use strict';
-  const styleSheet = {
-    '--bg1': '#101010',
-    '--bg3': '#101010',
-    '--Ga0': '#151515',
-    '--Ga0_s': '#151515',
-    '--Ga0_t': '#151515',
-    '--Ga1': '#101010',
-    '--Ga1_s': '#101010',
-    '--Ga1_t': '#101010',
-    '--Ga1_e': '#101010',
-    '--Ga2': '#303030',
-    '--Ga2_t': '#303030',
-    '--Ga3': '#505050',
-    '--Ga3_t': '#505050',
-    '--Ga4': '#707070',
-    '--Ga4_t': '#707070',
-    '--Ga5': '#909090',
-    '--Ga5_t': '#909090',
-    '--Ga6': '#A0A0A0',
-    '--Ga6_t': '#A0A0A0',
-    '--Ga7': '#B0B0B0',
-    '--Ga7_t': '#B0B0B0',
-    '--Ga8': '#D0D0D0',
-    '--Ga8_t': '#D0D0D0',
-    '--Ga9': '#F0F0F0',
-    '--Ga9_t': '#F0F0F0',
-    '--Ga10': '#FFFFFF',
-    '--Ga10_t': '#FFFFFF',
-    '--Ga11': '#101010',
-    '--Ga12': '#202020',
-    '--Ga12_s': '#151515',
-    '--Ga13': '#202020',
-    '--Ga13_s': '#202020',
-    //
-    '--Wh0': '#000',
-    '--Wh0_t': '#000',
-    '--Ba0': '#fff',
-    '--Ba0_s': '#fff',
-    '--Ba0_t': '#fff',
-    //
-    '--Wh0_rgb': '0, 0, 0',
-    '--Ga0_rgb': '21, 21, 21',
-    '--Ga0_s_rgb': '21, 21, 21',
-    '--Ga1_rgb': '16, 16, 16',
-    '--Ga1_s_rgb': '16, 16, 16',
-    '--Ga2_rgb': '48, 48, 48',
-    '--Ga3_rgb': '80, 80, 80',
-    '--Ga5_rgb': '144, 144, 144',
-    '--Ga7_rgb': '176, 176, 176',
-    '--Ga10_rgb': '0, 0, 0',
-    '--Ga11_rgb': '0, 0, 0',
-    '--Ga12_rgb': '10, 10, 10',
-    '--Ba0_rgb': '0, 0, 0',
-  };
-  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    // force change global css variables
-    const html = document.getElementsByTagName('html')[0];
-    Object.entries(styleSheet).forEach(([k, v]) => {
-      html.style.setProperty(k, v);
-    })
 
-    // activity pages
-    const bg = document.getElementsByClassName('bg')[0];
-    bg?.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(bg).getPropertyValue('background-image')}`)
-
-    // message pages
-    setTimeout(() => {
-      const messageBg = document.getElementsByClassName('message-bg')[0];
-      messageBg?.style.setProperty('background-image', `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), ${getComputedStyle(messageBg).getPropertyValue('background-image')}`)
-    }, 1000)
+  // Vue 3: depth-first walk over the vnode tree, returns the first non-null visit(v)
+  function walkV3(rootVNode, visit) {
+    const stack = [rootVNode];
+    const seen = new Set();
+    while (stack.length) {
+      const v = stack.pop();
+      if (!v || typeof v !== 'object' || seen.has(v)) continue;
+      seen.add(v);
+      const hit = visit(v);
+      if (hit) return hit;
+      if (v.component) stack.push(v.component.subTree);
+      else if (Array.isArray(v.children)) for (const c of v.children) stack.push(c);
+      else if (v.suspense) stack.push(v.suspense.activeBranch || v.suspense.pendingBranch);
+    }
+    return null;
   }
+
+  // poll until the container exists and Vue has mounted on it (container._vnode is set)
+  async function waitForVNode(selector, timeout = 5000) {
+    const deadline = Date.now() + timeout;
+    for (;;) {
+      const vnode = document.querySelector(selector)?._vnode;
+      if (vnode) return vnode;
+      if (Date.now() > deadline) throw new Error(`waitForVNode: 超时未找到 ${selector} 的 _vnode`);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  (async () => {
+    const root = await waitForVNode(location.href === 'https://www.bilibili.com/' ? '#app' : '[data-v-app]');
+
+    // BiliHeader's setup() calls provide("emitter", <event bus>), shared with its children via inject("emitter").
+    // Emitting on that bus is the same as clicking the dark-mode toggle in the header: it re-themes the header
+    // itself, calls the page's themeSwitchHandler, and broadcasts global.themeChange.
+    const emitter = walkV3(root, (v) => v.component?.provides?.emitter);
+    if (!emitter) {
+      console.warn('B站自动深色模式: 未找到顶栏的 emitter 事件总线，跳过深浅色切换');
+      return;
+    }
+
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => emitter.emit('themeChange', darkModeQuery.matches ? 'dark' : 'light');
+
+    apply();
+    darkModeQuery.addEventListener('change', apply);
+  })();
 })();
